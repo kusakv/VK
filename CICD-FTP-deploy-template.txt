@@ -1,0 +1,23 @@
+stages:
+  - deploy
+  - deploy_develop
+
+upload_production:
+  stage: deploy
+  image: mwienk/docker-lftp:latest
+  script:
+    - lftp -e "set ftp:ssl-allow false; mirror -Rnv --exclude composer.lock --exclude composer.json --exclude config.codekit3 --exclude-glob *.cache --exclude _assets/_cache/*.cache --exclude _assets/_kit/ --exclude _assets/_js/ --exclude _assets/_scss/ ./www ./www; exit;" -u $FTP_USERNAME,$FTP_PASSWORD $FTP_HOST
+    - lftp -e "set ftp:ssl-allow false; chmod 0777 www/_assets/_cache; exit;" -u $FTP_USERNAME,$FTP_PASSWORD $FTP_HOST
+  only:
+    - master
+  when: on_success
+
+upload_develop:
+  stage: deploy_develop
+  image: mwienk/docker-lftp:latest
+  script:
+    - lftp -e "set ftp:ssl-allow false; mirror -Rnv --exclude-glob *.cache ./www ./www; exit;" -u $FTP_DEV_USERNAME,$FTP_DEV_PASSWORD $FTP_DEV_HOST
+    - lftp -e "set ftp:ssl-allow false; chmod 0777 www/_assets/_cache; exit;" -u $FTP_DEV_USERNAME,$FTP_DEV_PASSWORD $FTP_DEV_HOST
+  only:
+    - develop
+  when: on_success
